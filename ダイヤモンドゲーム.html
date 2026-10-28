@@ -1,0 +1,477 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ダイヤモンドゲーム</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: board on the left as the hero, a narrow control column on the right, illustrated rules below. Stacks to one column on phones. */
+:root{
+  --paper:#eceef6; --panel:#f8f8fc; --ink:#191d3a; --muted:#5a6087; --line:#d2d5e6; --accent:#d93a2a; --accent-ink:#ffffff;
+  --board:#23316e; --board-rim:#151d48; --hole:#0f1638; --hole-rim:rgba(255,255,255,.09);
+  --display:"Dela Gothic One","Hiragino Kaku Gothic StdN","Yu Gothic",sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0e1126; --panel:#161a35; --ink:#e9eaf6; --muted:#9aa0c6; --line:#2b3058; --accent:#ff6550; --accent-ink:#1a0805; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0e1126; --panel:#161a35; --ink:#e9eaf6; --muted:#9aa0c6; --line:#2b3058; --accent:#ff6550; --accent-ink:#1a0805; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.7;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 56px}
+.wrap{max-width:1140px;margin:0 auto}
+header.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;margin-bottom:8px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(30px,6vw,52px);line-height:1.1;margin:0;letter-spacing:.02em;text-wrap:balance}
+h1 .gem{display:inline-block;width:.62em;height:.62em;background:var(--accent);transform:rotate(45deg) translateY(-.08em);margin-right:.32em;border-radius:3px}
+.sub{color:var(--muted);margin:0}
+.sub a{color:inherit}
+
+.game{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:24px;align-items:start}
+@media (max-width:880px){.game{grid-template-columns:minmax(0,1fr)}}
+.board-wrap{min-width:0}
+#board{display:block;width:100%;max-height:min(80vh,780px);margin:0 auto;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.turn{font-family:var(--display);font-size:22px;line-height:1.3;margin:0}
+.msg{margin:4px 0 0;color:var(--muted);min-height:3.4em}
+.players{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.players li{display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:10px;padding:6px 10px;border-radius:10px;border:1px solid transparent}
+.players li.now{border-color:var(--line);background:var(--paper)}
+.dot{width:14px;height:14px;border-radius:50%;box-shadow:inset 0 -2px 3px rgba(0,0,0,.35)}
+.pips{display:flex;gap:2px;align-items:center}
+.pips i{width:7px;height:12px;border-radius:2px;background:var(--line)}
+.pips i.on{background:var(--c)}
+.pips b{font-weight:500;font-size:12px;color:var(--muted);margin-left:6px;font-variant-numeric:tabular-nums;min-width:3.2em;text-align:right}
+.win{margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--accent);color:var(--accent-ink)}
+.win strong{font-family:var(--display);font-weight:400;font-size:20px;display:block}
+.label{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--muted);margin:0 0 6px}
+.seg{display:flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:3px;background:var(--paper)}
+.seg button{flex:1;border:0;background:transparent;color:var(--ink);font:inherit;font-weight:500;padding:7px 8px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.hintline{font-size:13px;color:var(--muted);margin:6px 2px 0;min-height:1.5em}
+.ctl{display:flex;flex-direction:column;gap:14px}
+.actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.btn{font:inherit;font-weight:700;border-radius:10px;padding:9px 6px;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:default}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* board svg */
+.hole{fill:var(--hole);stroke:var(--hole-rim);stroke-width:1.5}
+.zlabel{font-family:var(--body);font-weight:700;font-size:15px;fill:var(--muted);letter-spacing:.1em}
+.pc{transition:transform .17s ease-in-out;cursor:pointer}
+.pc .sh{fill:rgba(0,0,0,.45)}
+.pc .gl{fill:rgba(255,255,255,.55)}
+.pc .ring{fill:none;stroke:#fff;stroke-width:3;opacity:0}
+.pc.sel .ring{opacity:1}
+.pc.hint .ring{opacity:1;stroke:#ffe27a;stroke-dasharray:5 4}
+.dest{fill:rgba(255,255,255,.9);cursor:pointer;transform-box:fill-box;transform-origin:center;animation:pulse 1.1s ease-in-out infinite alternate}
+.dest.hint{fill:#ffe27a}
+@keyframes pulse{from{transform:scale(.75)}to{transform:scale(1.05)}}
+.trail{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2 7;opacity:.85}
+.preview{fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+@media (prefers-reduced-motion:reduce){.pc{transition:none}.dest{animation:none}}
+
+/* rules */
+#rules{margin-top:40px}
+h2{font-family:var(--display);font-weight:400;font-size:28px;margin:0 0 4px}
+.lead{color:var(--muted);margin:0 0 18px;max-width:62ch}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.rcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.mini{display:block;width:100%;height:150px;background:var(--board);border-radius:10px}
+h3{font-size:17px;margin:0;line-height:1.4}
+.rcard p{margin:0;font-size:14px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px}
+.two ul{margin:0;padding-left:1.2em;font-size:14px}
+.two li+li{margin-top:4px}
+.note{font-size:13px;color:var(--muted);margin-top:14px;max-width:70ch}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="g0" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#ff9e86"/><stop offset=".5" stop-color="#e5412b"/><stop offset="1" stop-color="#8e1a0e"/></radialGradient>
+    <radialGradient id="g1" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#a8d6ff"/><stop offset=".5" stop-color="#3a8cf0"/><stop offset="1" stop-color="#143f86"/></radialGradient>
+    <radialGradient id="g2" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#fff2a8"/><stop offset=".5" stop-color="#efbd2c"/><stop offset="1" stop-color="#946b00"/></radialGradient>
+    <marker id="arw" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:#fff"/></marker>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <h1><span class="gem" aria-hidden="true"></span>ダイヤモンドゲーム</h1>
+    <p class="sub">あなた（赤）対 CPU。ルールは<a href="#rules">盤の下</a>に図つきで。</p>
+  </header>
+
+  <main class="game">
+    <section class="board-wrap">
+      <svg id="board" viewBox="-275 -330 550 660" role="img" aria-label="ダイヤモンドゲームの盤面">
+        <g id="L-bg"></g><g id="L-zone"></g><g id="L-holes"></g><g id="L-trail"></g><g id="L-hint"></g><g id="L-pieces"></g><g id="L-dest"></g>
+      </svg>
+    </section>
+
+    <aside class="side">
+      <div class="card" aria-live="polite">
+        <p class="turn" id="turn">あなたの番</p>
+        <p class="msg" id="msg"></p>
+        <ul class="players" id="players"></ul>
+        <div class="win" id="win" hidden><strong id="winTitle"></strong><span id="winSub"></span></div>
+      </div>
+
+      <div class="card ctl">
+        <div>
+          <p class="label">人数</p>
+          <div class="seg" id="segNp">
+            <button id="np2" data-np="2">2人（CPU 1）</button>
+            <button id="np3" data-np="3">3人（CPU 2）</button>
+          </div>
+        </div>
+        <div>
+          <p class="label">CPUのつよさ</p>
+          <div class="seg" id="segLv">
+            <button id="lvEasy" data-lv="easy">やさしい</button>
+            <button id="lvNormal" data-lv="normal">ふつう</button>
+            <button id="lvHard" data-lv="hard">つよい</button>
+          </div>
+          <p class="hintline" id="lvDesc"></p>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="btnNew">新しく始める</button>
+          <button class="btn" id="btnUndo">待った</button>
+          <button class="btn" id="btnHint">ヒント</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <section id="rules">
+    <h2>ルール</h2>
+    <p class="lead">覚えることは4つだけ。駒は取られないし、取ることもない。ひたすら向こう側へ運ぶ競争です。</p>
+    <div class="rgrid">
+      <article class="rcard"><div id="m1"></div><h3>向かい側の三角に全部運ぶ</h3><p>自分の10個の駒を、真向かいの三角（ゴール陣地）に<b>全部</b>入れたら勝ち。一番乗りが勝ちです。</p></article>
+      <article class="rcard"><div id="m2"></div><h3>1歩：となりの穴へ</h3><p>手番には駒を1つだけ動かす。となりの空いた穴へ1マス。6方向どこでもよく、後ろや横にも動けます。</p></article>
+      <article class="rcard"><div id="m3"></div><h3>ジャンプ：駒を1つ飛び越す</h3><p>となりの駒を1つ飛び越えて、すぐ向こうの空き穴へ。相手の駒でも自分の駒でも飛べます。飛ばれた駒はそのまま。</p></article>
+      <article class="rcard"><div id="m4"></div><h3>連続ジャンプ</h3><p>着地した場所からまた飛べるなら、何回でも続けてOK。向きは毎回変えてよく、好きなところで止まれます。</p></article>
+    </div>
+    <div class="two">
+      <div class="card">
+        <p class="label">できないこと</p>
+        <ul>
+          <li>1歩動いたあとにジャンプする（1歩とジャンプは混ぜられない）</li>
+          <li>2つ並んだ駒をまとめて飛ぶ</li>
+          <li>空き穴をはさんで離れた駒を飛ぶ</li>
+          <li>パス（動ける駒があるなら必ず動かす）</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="label">勝つコツ</p>
+        <ul>
+          <li>駒を1つおきに並べて「はしご」を作ると、一気に何マスも進める</li>
+          <li>相手のはしごも遠慮なく借りる</li>
+          <li>最後の1個が置き去りになると、そこから数手かかる。後ろの駒から運ぶ</li>
+          <li>迷ったら「ヒント」で「つよい」CPUならどう指すか見られる</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">このゲームは1人10個・王様の駒なしの基本ルールです。市販のセットや家庭によっては駒の数や特別な駒が違うことがありますが、動かし方は同じです。2人のときは使わない角の三角も通ってかまいません。</p>
+  </section>
+</div>
+
+<script>
+(()=>{
+const SQ3=Math.sqrt(3)/2, D=36, R=13, HOLE=7;
+const DIRS=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+const cells=[], idx=new Map();
+for(let r=-8;r<=8;r++)for(let q=-8;q<=8;q++){
+  const s=-q-r; const A=q<=4&&r<=4&&s<=4, B=q>=-4&&r>=-4&&s>=-4;
+  if(A||B){idx.set(q+','+r,cells.length);cells.push({q,r,s,x:(q+r/2)*D,y:r*D*SQ3});}
+}
+const NC=cells.length;
+const NB=cells.map(c=>DIRS.map(([a,b])=>{const k=idx.get((c.q+a)+','+(c.r+b));return k===undefined?-1:k;}));
+const regionOf=c=>c.r>=5?'S':c.r<=-5?'N':c.q>=5?'NE':c.q<=-5?'SW':c.s>=5?'NW':c.s<=-5?'SE':null;
+const REG={N:[],S:[],NE:[],SW:[],NW:[],SE:[]};
+cells.forEach((c,i)=>{c.reg=regionOf(c);if(c.reg)REG[c.reg].push(i);});
+const TIP={};Object.entries({N:'4,-8',S:'-4,8',NE:'8,-4',SW:'-8,4',NW:'-4,-4',SE:'4,4'}).forEach(([k,v])=>TIP[k]=idx.get(v));
+const hd=(a,b)=>(Math.abs(cells[a].q-cells[b].q)+Math.abs(cells[a].r-cells[b].r)+Math.abs(cells[a].s-cells[b].s))/2;
+const DT={};for(const k in TIP)DT[k]=cells.map((_,i)=>hd(i,TIP[k]));
+const COLORS=['#e5412b','#3a8cf0','#efbd2c'];
+const LAYOUT={2:[['S','N'],['N','S']],3:[['S','N'],['NE','SW'],['NW','SE']]};
+const LV={easy:'ときどき適当に動かす、手加減モード。',normal:'1手ごとに一番進める手を選ぶ。',hard:'自分の2手先まで読んで、はしごを作ってくる。'};
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const STEP=reduce?0:180;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a={})=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+const svg=$('board'), L={bg:$('L-bg'),zone:$('L-zone'),holes:$('L-holes'),trail:$('L-trail'),hint:$('L-hint'),pieces:$('L-pieces'),dest:$('L-dest')};
+
+let S=null, level='normal', GEN=0, busy=false, sel=-1, selMoves=[], hover=null, hint=null, pieceEls=[];
+
+/* ---------- static board ---------- */
+function drawBoard(){
+  const order=['4,-8','4,-4','8,-4','4,0','4,4','0,4','-4,8','-4,4','-8,4','-4,0','-4,-4','0,-4'];
+  const pts=order.map(k=>{const c=cells[idx.get(k)];return c.x.toFixed(1)+','+c.y.toFixed(1);}).join(' ');
+  L.bg.append(el('polygon',{points:pts,fill:'var(--board-rim)',stroke:'var(--board-rim)','stroke-width':66,'stroke-linejoin':'round'}));
+  L.bg.append(el('polygon',{points:pts,fill:'var(--board)',stroke:'var(--board)','stroke-width':52,'stroke-linejoin':'round'}));
+  cells.forEach(c=>L.holes.append(el('circle',{class:'hole',cx:c.x,cy:c.y,r:HOLE})));
+}
+function triPoly(reg,off){
+  const tip=TIP[reg]; const base=REG[reg].filter(i=>hd(i,tip)===3);
+  let a=base[0],b=base[0],best=-1;
+  for(const i of base)for(const j of base){const d=hd(i,j);if(d>best){best=d;a=i;b=j;}}
+  const V=[tip,a,b].map(i=>cells[i]); const cx=(V[0].x+V[1].x+V[2].x)/3, cy=(V[0].y+V[1].y+V[2].y)/3;
+  return V.map(v=>{const dx=v.x-cx,dy=v.y-cy,l=Math.hypot(dx,dy);return [(v.x+dx/l*off*2),(v.y+dy/l*off*2)];});
+}
+function drawZones(){
+  L.zone.innerHTML='';
+  S.players.forEach((p,i)=>{
+    const h=triPoly(p.home,19).map(v=>v.join(',')).join(' ');
+    L.zone.append(el('polygon',{points:h,fill:COLORS[p.color],'fill-opacity':.28,stroke:COLORS[p.color],'stroke-opacity':.28,'stroke-width':10,'stroke-linejoin':'round'}));
+    const t=triPoly(p.target,21).map(v=>v.join(',')).join(' ');
+    L.zone.append(el('polygon',{points:t,fill:'none',stroke:COLORS[p.color],'stroke-width':3,'stroke-dasharray':'9 7','stroke-linejoin':'round',opacity:.95}));
+  });
+  const g=el('text',{x:0,y:-300,'text-anchor':'middle',class:'zlabel'});g.textContent='あなたのゴール';L.zone.append(g);
+  const s=el('text',{x:0,y:316,'text-anchor':'middle',class:'zlabel'});s.textContent='スタート';L.zone.append(s);
+}
+
+/* ---------- rules engine ---------- */
+function movesFrom(b,from){
+  const res=[], seen=new Set([from]); const o=b[from]; b[from]=-1;
+  for(let d=0;d<6;d++){const n=NB[from][d];if(n>=0&&b[n]<0){res.push({from,to:n,path:[from,n]});seen.add(n);}}
+  const prev=new Map([[from,-1]]), q=[from];
+  while(q.length){
+    const c=q.shift();
+    for(let d=0;d<6;d++){
+      const m=NB[c][d]; if(m<0||b[m]<0)continue;
+      const l=NB[m][d]; if(l<0||b[l]>=0||prev.has(l))continue;
+      prev.set(l,c); q.push(l);
+      if(!seen.has(l)){seen.add(l);const path=[l];let x=c;while(x!==-1){path.unshift(x);x=prev.get(x);}res.push({from,to:l,path});}
+    }
+  }
+  b[from]=o; return res;
+}
+function allMoves(b,p){const r=[];for(let c=0;c<NC;c++)if(b[c]===p)for(const m of movesFrom(b,c))r.push(m);return r;}
+const isWin=(b,p)=>REG[S.players[p].target].every(c=>b[c]===p);
+const inTarget=(b,p)=>REG[S.players[p].target].filter(c=>b[c]===p).length;
+function evalP(b,i){
+  const dt=DT[S.players[i].target], lat=S.lat[i]; let sum=0,mx=0,l=0;
+  for(let c=0;c<NC;c++)if(b[c]===i){const d=dt[c];sum+=d;if(d>mx)mx=d;l+=lat[c];}
+  return -(sum+0.6*mx+0.2*l);
+}
+function posKey(b,i){let k='';for(let c=0;c<NC;c++)if(b[c]===i)k+=c+',';return k;}
+function chooseMove(i,lv){
+  const b=S.board.slice(); let moves=allMoves(b,i); if(!moves.length)return null;
+  const lm=S.last[i]; if(lm&&moves.length>1){const f=moves.filter(m=>!(m.from===lm.to&&m.to===lm.from));if(f.length)moves=f;}
+  const tgt=S.players[i].target, vis=S.visits[i];
+  const ap=m=>{b[m.to]=b[m.from];b[m.from]=-1;}, un=m=>{b[m.from]=b[m.to];b[m.to]=-1;};
+  const after=m=>{let e=evalP(b,i);if(isWin(b,i))e+=1000;e-=1.5*(vis.get(posKey(b,i))||0);if(cells[m.from].reg===tgt&&cells[m.to].reg!==tgt)e-=2;return e;};
+  const pick=arr=>arr.reduce((a,x)=>x.v>a.v?x:a).m;
+  if(lv==='easy'){
+    const base=evalP(b,i); const sc=moves.map(m=>{ap(m);const v=after(m);un(m);return{m,v};});
+    if(Math.random()<0.45){const ok=sc.filter(x=>x.v>=base-0.3);const pool=ok.length?ok:sc;return pool[Math.random()*pool.length|0].m;}
+    return pick(sc.map(x=>({m:x.m,v:x.v+Math.random()*0.8})));
+  }
+  if(lv==='normal'){return pick(moves.map(m=>{ap(m);const v=after(m)+Math.random()*0.25;un(m);return{m,v};}));}
+  // hard: look at my next move too
+  let first=moves.map(m=>{ap(m);const v=after(m);un(m);return{m,v};});
+  const won=first.find(x=>x.v>500); if(won)return won.m;
+  first.sort((a,c)=>c.v-a.v); first=first.slice(0,45);
+  return pick(first.map(({m,v:e1})=>{
+    ap(m); let best2=e1-0.5;
+    for(const m2 of allMoves(b,i)){ap(m2);let e=evalP(b,i);if(isWin(b,i))e+=500;if(e>best2)best2=e;un(m2);}
+    un(m); return {m,v:0.35*e1+0.65*best2+Math.random()*0.05};
+  }));
+}
+
+/* ---------- game flow ---------- */
+function newGame(np){
+  GEN++; busy=false; sel=-1; selMoves=[]; hover=null; hint=null;
+  const players=LAYOUT[np].map(([h,t],i)=>({home:h,target:t,human:i===0,color:i,name:i===0?'あなた':(np===2?'CPU':'CPU '+i)}));
+  const board=new Int8Array(NC).fill(-1), pid=new Int16Array(NC).fill(-1), pieces=[];
+  players.forEach((p,i)=>REG[p.home].forEach(c=>{board[c]=i;pid[c]=pieces.length;pieces.push({owner:i,cell:c});}));
+  const lat=players.map(p=>{const H=cells[TIP[p.home]],T=cells[TIP[p.target]];const ux=T.x-H.x,uy=T.y-H.y,l=Math.hypot(ux,uy);
+    return cells.map(c=>c.reg===p.target?0:Math.abs(c.x*uy/l-c.y*ux/l)/D);});
+  S={np,players,board,pid,pieces,lat,cur:0,turn:1,over:false,winner:-1,last:[],trail:null,visits:players.map(()=>new Map()),hist:[]};
+  drawZones(); buildPieces(); render(); nextTurn();
+}
+function setPos(g,c){const p=cells[c];g.style.transform=`translate(${p.x}px,${p.y}px)`;}
+function buildPieces(){
+  L.pieces.innerHTML='';
+  pieceEls=S.pieces.map(p=>{
+    const g=el('g',{class:'pc'});
+    g.innerHTML=`<circle class="sh" r="${R}" cy="2.5"/><circle class="ring" r="${R+5}"/><circle r="${R}" fill="url(#g${S.players[p.owner].color})"/><ellipse class="gl" rx="${R*.42}" ry="${R*.26}" cx="${-R*.28}" cy="${-R*.42}"/>`;
+    g.style.transition='none'; setPos(g,p.cell); L.pieces.append(g);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{g.style.transition='';}));
+    return g;
+  });
+}
+async function nextTurn(){
+  if(S.over)return;
+  const p=S.cur, g=GEN;
+  if(S.players[p].human){
+    if(!allMoves(S.board,p).length){S.cur=(S.cur+1)%S.np;render();return nextTurn();}
+    render(); return;
+  }
+  busy=true; render();
+  await sleep(reduce?120:420); if(g!==GEN)return;
+  const m=chooseMove(p,level); if(g!==GEN)return;
+  if(!m){busy=false;S.cur=(S.cur+1)%S.np;if(S.cur===0)S.turn++;return nextTurn();}
+  await doMove(m);
+}
+async function doMove(m){
+  const g=GEN; busy=true; sel=-1; selMoves=[]; hover=null; hint=null; render();
+  const id=S.pid[m.from], pe=pieceEls[id]; L.pieces.append(pe);
+  for(let k=1;k<m.path.length;k++){setPos(pe,m.path[k]);if(STEP)await sleep(STEP);if(g!==GEN)return;}
+  const i=S.board[m.from];
+  S.board[m.to]=i;S.board[m.from]=-1;S.pid[m.to]=id;S.pid[m.from]=-1;S.pieces[id].cell=m.to;
+  S.last[i]=m; S.trail={path:m.path,owner:i};
+  const k=posKey(S.board,i); S.visits[i].set(k,(S.visits[i].get(k)||0)+1);
+  if(isWin(S.board,i)){S.over=true;S.winner=i;}
+  else{S.cur=(S.cur+1)%S.np;if(S.cur===0)S.turn++;}
+  busy=false; render(); if(!S.over)nextTurn();
+}
+function humanPlay(m){
+  S.hist.push({board:S.board.slice(),pid:S.pid.slice(),cells:S.pieces.map(p=>p.cell),cur:S.cur,turn:S.turn,last:S.last.slice(),trail:S.trail,visits:S.visits.map(v=>new Map(v))});
+  if(S.hist.length>200)S.hist.shift();
+  doMove(m);
+}
+function undo(){
+  if(busy||S.over&&!S.hist.length||!S.hist.length)return;
+  if(!S.players[S.cur].human&&!S.over)return;
+  GEN++; const h=S.hist.pop();
+  Object.assign(S,{board:h.board,pid:h.pid,cur:h.cur,turn:h.turn,last:h.last,trail:h.trail,visits:h.visits,over:false,winner:-1});
+  h.cells.forEach((c,id)=>{S.pieces[id].cell=c;setPos(pieceEls[id],c);});
+  sel=-1;selMoves=[];hint=null;hover=null;busy=false;render();
+}
+
+/* ---------- input ---------- */
+function cellAt(e){
+  const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
+  const m=svg.getScreenCTM();if(!m)return -1;const p=pt.matrixTransform(m.inverse());
+  let best=-1,bd=D*0.55;cells.forEach((c,i)=>{const d=Math.hypot(c.x-p.x,c.y-p.y);if(d<bd){bd=d;best=i;}});return best;
+}
+const myTurn=()=>S&&!busy&&!S.over&&S.players[S.cur].human;
+svg.addEventListener('click',e=>{
+  if(!myTurn())return; const c=cellAt(e);
+  if(sel>=0){const m=selMoves.find(m=>m.to===c);if(m){humanPlay(m);return;}}
+  if(c>=0&&S.board[c]===S.cur){
+    if(sel===c){sel=-1;selMoves=[];}else{sel=c;selMoves=movesFrom(S.board,c);}
+    hover=null;if(hint&&hint.from!==c)hint=null;render();return;
+  }
+  sel=-1;selMoves=[];hover=null;render();
+});
+svg.addEventListener('pointermove',e=>{
+  if(!myTurn()||sel<0||e.pointerType==='touch')return;
+  const c=cellAt(e);const m=selMoves.find(m=>m.to===c)||null;
+  if(m!==hover){hover=m;renderHints();}
+});
+$('segNp').addEventListener('click',e=>{const b=e.target.closest('button');if(b)newGame(+b.dataset.np);});
+$('segLv').addEventListener('click',e=>{const b=e.target.closest('button');if(b){level=b.dataset.lv;render();}});
+$('btnNew').addEventListener('click',()=>newGame(S.np));
+$('btnUndo').addEventListener('click',undo);
+$('btnHint').addEventListener('click',()=>{
+  if(!myTurn())return; const m=chooseMove(S.cur,'hard'); if(!m)return;
+  hint=m; sel=m.from; selMoves=movesFrom(S.board,m.from); hover=selMoves.find(x=>x.to===m.to)||null; render();
+});
+
+/* ---------- render ---------- */
+const pathD=p=>p.map((c,k)=>(k?'L':'M')+cells[c].x.toFixed(1)+','+cells[c].y.toFixed(1)).join(' ');
+function renderHints(){
+  L.hint.innerHTML='';L.dest.innerHTML='';
+  pieceEls.forEach((g,id)=>{g.classList.toggle('sel',S.pieces[id].cell===sel&&!(hint&&hint.from===sel));g.classList.toggle('hint',!!hint&&S.pieces[id].cell===hint.from);});
+  const pv=hover||null;
+  if(pv)L.hint.append(el('path',{d:pathD(pv.path),class:'preview'}));
+  for(const m of selMoves){
+    const c=cells[m.to];
+    L.dest.append(el('circle',{cx:c.x,cy:c.y,r:9,class:'dest'+(hint&&hint.to===m.to?' hint':'')}));
+  }
+}
+function render(){
+  if(!S)return;
+  L.trail.innerHTML='';
+  if(S.trail){
+    L.trail.append(el('path',{d:pathD(S.trail.path),class:'trail',stroke:COLORS[S.players[S.trail.owner].color]}));
+    const s=cells[S.trail.path[0]];
+    L.trail.append(el('circle',{cx:s.x,cy:s.y,r:HOLE+3,fill:'none',stroke:COLORS[S.players[S.trail.owner].color],'stroke-width':2.5,opacity:.9}));
+  }
+  renderHints();
+  const P=S.players[S.cur];
+  let turn,msg;
+  if(S.over){const w=S.players[S.winner];turn=w.human?'あなたの勝ち！':w.name+'の勝ち';msg='「新しく始める」でもう一局。';}
+  else if(P.human){
+    turn='あなたの番（赤）';
+    if(sel<0)msg='動かしたい赤い駒をタップ。動ける場所が白く光ります。';
+    else if(!selMoves.length)msg='この駒は今は動けません。別の駒を選んでください。';
+    else msg=(hint?'ヒント：黄色の穴がおすすめ。':'')+'光っている穴をタップで移動。駒をもう一度タップで取り消し。';
+  } else {turn=P.name+'の番';msg=P.name+'が考え中…';}
+  $('turn').textContent=turn; $('msg').textContent=msg;
+  const ul=$('players');ul.innerHTML='';
+  S.players.forEach((p,i)=>{
+    const n=inTarget(S.board,i);const li=document.createElement('li');
+    if(i===S.cur&&!S.over)li.className='now';
+    li.style.setProperty('--c',COLORS[p.color]);
+    li.innerHTML=`<span class="dot" style="background:${COLORS[p.color]}"></span><span>${p.name}</span><span class="pips" aria-label="ゴール ${n}/10">${'<i class="on"></i>'.repeat(n)}${'<i></i>'.repeat(10-n)}<b>${n}/10</b></span>`;
+    ul.append(li);
+  });
+  const w=$('win');w.hidden=!S.over;
+  if(S.over){const W=S.players[S.winner];$('winTitle').textContent=W.human?'全部ゴール！':W.name+'が先にゴール';$('winSub').textContent=`${S.turn}手目で10個そろいました。`+(W.human?'':' 「待った」で戻ってやり直せます。');}
+  document.querySelectorAll('#segNp button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.np===S.np)));
+  document.querySelectorAll('#segLv button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lv===level)));
+  $('lvDesc').textContent=LV[level];
+  $('btnUndo').disabled=!S.hist.length||busy||!(S.over||P.human);
+  $('btnHint').disabled=!myTurn();
+}
+
+/* ---------- rule diagrams ---------- */
+function mini(host,{cells:cl,pieces={},path=null,jump=false,land=null,fan=null,label}){
+  const M=30,pos=([q,r])=>[(q+r/2)*M,r*M*SQ3];
+  const P=cl.map(pos);const xs=P.map(p=>p[0]),ys=P.map(p=>p[1]);
+  const x0=Math.min(...xs)-26,x1=Math.max(...xs)+26,y0=Math.min(...ys)-30,y1=Math.max(...ys)+22;
+  let s=`<svg class="mini" viewBox="${x0} ${y0} ${x1-x0} ${y1-y0}" role="img" aria-label="${label}">`;
+  P.forEach(([x,y])=>s+=`<circle cx="${x}" cy="${y}" r="5.5" class="hole"/>`);
+  if(land){const[x,y]=pos(land);s+=`<circle cx="${x}" cy="${y}" r="13" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="4 4" opacity=".8"/>`;}
+  for(const k in pieces){const[x,y]=pos(k.split(',').map(Number));s+=`<circle cx="${x}" cy="${y+2}" r="11" fill="rgba(0,0,0,.45)"/><circle cx="${x}" cy="${y}" r="11" fill="url(#g${pieces[k]})"/>`;}
+  const seg=(a,b,last)=>{const[ax,ay]=pos(a),[bx,by]=pos(b);const dx=bx-ax,dy=by-ay,l=Math.hypot(dx,dy),ux=dx/l,uy=dy/l;
+    const sx=ax+ux*13,sy=ay+uy*13,ex=bx-ux*15,ey=by-uy*15;
+    const mk=last?' marker-end="url(#arw)"':'';
+    if(!jump)return `<path d="M${sx},${sy} L${ex},${ey}" stroke="#fff" stroke-width="2.5" fill="none"${mk}/>`;
+    let px=uy,py=-ux;if(py>0||(py===0&&px<0)){px=-px;py=-py;}
+    const cx=(ax+bx)/2+px*l*.45,cy=(ay+by)/2+py*l*.45;
+    return `<path d="M${ax+px*12},${ay+py*12} Q${cx},${cy} ${bx+px*12-ux*6},${by+py*12-uy*6}" stroke="#fff" stroke-width="2.5" fill="none"${mk}/>`;};
+  if(path)for(let k=1;k<path.length;k++)s+=seg(path[k-1],path[k],k===path.length-1);
+  if(fan)fan.forEach(t=>s+=seg([0,0],t,true));
+  host.innerHTML=s+'</svg>';
+}
+function hexPatch(n){const out=[];for(let q=-n;q<=n;q++)for(let r=-n;r<=n;r++)if(Math.abs(q+r)<=n)out.push([q,r]);return out;}
+function miniGoal(){
+  const k=1/3.1;let s=`<svg class="mini" viewBox="-100 -96 200 192" role="img" aria-label="下の三角から向かいの上の三角へ全部運ぶ図">`;
+  const tri=(reg,off)=>triPoly(reg,off).map(v=>(v[0]*k).toFixed(1)+','+(v[1]*k).toFixed(1)).join(' ');
+  s+=`<polygon points="${tri('S',19)}" fill="${COLORS[0]}" fill-opacity=".3" stroke="${COLORS[0]}" stroke-opacity=".3" stroke-width="4" stroke-linejoin="round"/>`;
+  s+=`<polygon points="${tri('N',21)}" fill="none" stroke="${COLORS[0]}" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+  cells.forEach(c=>{const red=c.reg==='S';s+=red?`<circle cx="${c.x*k}" cy="${c.y*k}" r="4.6" fill="url(#g0)"/>`:`<circle cx="${c.x*k}" cy="${c.y*k}" r="2.4" class="hole"/>`;});
+  s+=`<path d="M0,48 L0,-50" stroke="#fff" stroke-width="2.5" marker-end="url(#arw)"/>`;
+  $('m1').innerHTML=s+'</svg>';
+}
+miniGoal();
+mini($('m2'),{cells:hexPatch(1),pieces:{'0,0':0},fan:DIRS.map(([a,b])=>[a,b]),label:'1歩は6方向どこへでも動ける図'});
+mini($('m3'),{cells:[[-2,0],[-1,0],[0,0],[1,0],[2,0]],pieces:{'-2,0':0,'-1,0':1},path:[[-2,0],[0,0]],jump:true,land:[0,0],label:'となりの青い駒を飛び越えて向こうの穴に着地する図'});
+mini($('m4'),{cells:hexPatch(2),pieces:{'-2,0':0,'-1,0':1,'1,-1':0},path:[[-2,0],[0,0],[2,-2]],jump:true,land:[2,-2],label:'青い駒、続けて自分の駒を飛び越える連続ジャンプの図'});
+
+/* ---------- boot ---------- */
+drawBoard();
+function start(data){
+  level=(data&&data.level)||'normal';
+  newGame((data&&data.np)||2);
+  if(data&&data.cells&&data.cells.length===S.pieces.length){
+    S.board.fill(-1);S.pid.fill(-1);
+    data.cells.forEach((c,id)=>{S.pieces[id].cell=c;S.board[c]=S.pieces[id].owner;S.pid[c]=id;setPos(pieceEls[id],c);});
+    Object.assign(S,{cur:data.cur,turn:data.turn,over:data.over,winner:data.winner});
+    render(); if(!S.over&&!S.players[S.cur].human)nextTurn();
+  }
+}
+try{window.claude?.hot?.snapshot?.(()=>S&&({np:S.np,level,cells:S.pieces.map(p=>p.cell),cur:S.cur,turn:S.turn,over:S.over,winner:S.winner}));}catch(e){}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+
+</body></html>
